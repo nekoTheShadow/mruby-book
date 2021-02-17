@@ -38,5 +38,36 @@ module MPS
     def resident_set_size()
       self["VmRSS"]
     end
+
+    def show_stat
+      puts <<-STAT
+Stat of process id = #{pid}
+===================================
+Command Line = #{cmdline.join(' ')}
+State        = #{state}
+VSZ          = #{vm_size}
+RSS          = #{resident_set_size}
+      STAT
+    end
   end
+end
+
+def __main__(_)
+  case ARGV.size
+  when 2
+    if ARGV[0] == "-p"
+      pid = ARGV[1].to_i
+      pinfo = MPS::ProcInfo.new(pid)
+      pinfo.show_stat
+      exit
+    end
+  else
+    # PASS
+  end
+  usage_and_exit
+end
+
+def usage_and_exit
+  puts "Usage #{$0} -p PID"
+  exit 1
 end
