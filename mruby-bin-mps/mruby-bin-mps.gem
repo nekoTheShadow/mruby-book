@@ -1,0 +1,7 @@
+name: mruby-bin-mps
+description: BinMps class
+author: hajime nakamura
+website: https://github.com/nakamura0903/mruby-bin-mps
+protocol: git
+repository: https://github.com/nakamura0903/mruby-bin-mps.git
+license: MIT
