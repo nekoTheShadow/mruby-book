@@ -1,0 +1,7 @@
+name: mruby-file-stat
+description: FileStat class
+author: hajime nakamura
+website: https://github.com/nakamura0903/mruby-file-stat
+protocol: git
+repository: https://github.com/nakamura0903/mruby-file-stat.git
+license: MIT
