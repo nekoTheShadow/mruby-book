@@ -24,9 +24,10 @@ static mrb_value mrb_my_uname(mrb_state *mrb, mrb_value self) {
 static mrb_value mrb_my_stat_size(mrb_state *mrb, mrb_value self) {
   struct stat buf;
   char *pathname;
+  int ret;
   
   mrb_get_args(mrb, "z", &pathname);
-  int ret = stat(pathname, &buf);
+  ret = stat(pathname, &buf);
   
   if (ret == -1) {
     mrb_sys_fail(mrb, "stat failed");
