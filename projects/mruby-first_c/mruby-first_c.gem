@@ -1,0 +1,7 @@
+name: mruby-first_c
+description: FirstC class
+author: hajime nakamura
+website: https://github.com/nakamura0903/mruby-first_c
+protocol: git
+repository: https://github.com/nakamura0903/mruby-first_c.git
+license: MIT
