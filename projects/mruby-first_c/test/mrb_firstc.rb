@@ -1,17 +1,4 @@
-##
-## FirstC Test
-##
-
-assert("FirstC#hello") do
-  t = FirstC.new "hello"
-  assert_equal("hello", t.hello)
+assert("FirstC#my_uname") do
+  assert_equal(`uname -n`.chomp, FirstC.my_uname)
 end
 
-assert("FirstC#bye") do
-  t = FirstC.new "hello"
-  assert_equal("hello bye", t.bye)
-end
-
-assert("FirstC.hi") do
-  assert_equal("hi!!", FirstC.hi)
-end
