@@ -1,0 +1,8 @@
+# mruby.confの設置方法
+sudo cp mruby.conf /etc/apache2/mods-available/mruby.conf
+
+# httpdの起動方法
+sudo service apache2 restart
+
+# localhostがうまく動かない場合はIPアドレスでアクセスする
+hostname -I
