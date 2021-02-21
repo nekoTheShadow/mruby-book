@@ -6,3 +6,6 @@ sudo service apache2 restart
 
 # localhostがうまく動かない場合はIPアドレスでアクセスする
 hostname -I
+
+# basic認証のパスワードを確認する
+echo "hajimen" | ruby -e 'p gets.chomp.chars.map{|c| (123 + (96 - c.ord)).chr}.join'
