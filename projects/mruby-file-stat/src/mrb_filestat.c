@@ -10,6 +10,7 @@
 #include <mruby/string.h>
 #include <mruby/variable.h>
 #include <sys/sysmacros.h>
+#include <unistd.h>
 #include "mrb_filestat.h"
 
 #define DONE mrb_gc_arena_restore(mrb, 0);
@@ -121,6 +122,11 @@ static mrb_value mrb_filestat_mtime(mrb_state *mrb, mrb_value self) {
   return ret;
 }
 
+static mrb_value mrb_filestat_is_writable(mrb_state *mrb, mrb_value self) {
+  mrb_value pathname = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@pathname"));
+  return mrb_bool_value(access(mrb_string_cstr(mrb, pathname), W_OK) == 0);
+}
+
 void mrb_mruby_file_stat_gem_init(mrb_state *mrb)
 {
   struct RClass *file, *filestat;
@@ -140,6 +146,7 @@ void mrb_mruby_file_stat_gem_init(mrb_state *mrb)
   mrb_define_method(mrb, filestat, "directory?", mrb_filestat_is_directory, MRB_ARGS_NONE());
   mrb_define_method(mrb, filestat, "mtime", mrb_filestat_mtime, MRB_ARGS_NONE());
   mrb_define_method(mrb, filestat, "symlink?", mrb_filestat_is_symlink, MRB_ARGS_NONE());
+  mrb_define_method(mrb, filestat, "writable?", mrb_filestat_is_writable, MRB_ARGS_NONE());
   MRB_SET_INSTANCE_TT(filestat, MRB_TT_DATA);
   DONE;
 }

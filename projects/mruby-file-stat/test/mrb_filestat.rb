@@ -27,3 +27,8 @@ assert("File::Stat#symlink?") do
   assert_equal(true, File::Stat.new("/bin/vim").symlink?)
   assert_equal(false, File::Stat.new("/dev/null").symlink?)
 end
+
+assert("File::Stat#writable") do 
+  assert_equal(true, File::Stat.new("/dev/null").writable?)
+  assert_equal(false, File::Stat.new("/proc/cmdline").writable?)
+end
