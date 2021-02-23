@@ -10,6 +10,7 @@
 #include <mruby/string.h>
 #include <mruby/variable.h>
 #include <sys/sysmacros.h>
+#include <unistd.h>
 #include "mrb_filestat.h"
 
 #define DONE mrb_gc_arena_restore(mrb, 0);
@@ -48,7 +49,7 @@ static mrb_value mrb_filestat_init(mrb_state *mrb, mrb_value self) {
   mrb_get_args(mrb, "S", &pathname);
   data = (mrb_filestat_data *)mrb_malloc(mrb, sizeof(mrb_filestat_data));
   data->stat = mrb_malloc(mrb, sizeof(struct stat));
-  ret = stat(mrb_string_cstr(mrb, pathname), data->stat);
+  ret = lstat(mrb_string_cstr(mrb, pathname), data->stat);
   if (ret == -1) {
     mrb_sys_fail(mrb, "stat failed");
   }
@@ -107,6 +108,10 @@ static mrb_value mrb_filestat_is_directory(mrb_state *mrb, mrb_value self) {
   return mrb_bool_value((mrb_bool)S_ISDIR(MRB_EXTRACT_MODE(self)));
 }
 
+static mrb_value mrb_filestat_is_symlink(mrb_state *mrb, mrb_value self) {
+  return mrb_bool_value((mrb_bool)S_ISLNK(MRB_EXTRACT_MODE(self)));
+}
+
 static mrb_value mrb_filestat_mtime(mrb_state *mrb, mrb_value self) {
   struct timespec mtime = MRB_EXTRACT_TIME(self, mtim);
   mrb_int sec = mtime.tv_sec;
@@ -115,6 +120,11 @@ static mrb_value mrb_filestat_mtime(mrb_state *mrb, mrb_value self) {
   struct RClass *time = mrb_class_get(mrb, "Time");
   ret = mrb_funcall(mrb, mrb_obj_value(time), "at", 2, mrb_fixnum_value(sec), mrb_fixnum_value(usec));
   return ret;
+}
+
+static mrb_value mrb_filestat_is_writable(mrb_state *mrb, mrb_value self) {
+  mrb_value pathname = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@pathname"));
+  return mrb_bool_value(access(mrb_string_cstr(mrb, pathname), W_OK) == 0);
 }
 
 void mrb_mruby_file_stat_gem_init(mrb_state *mrb)
@@ -135,6 +145,8 @@ void mrb_mruby_file_stat_gem_init(mrb_state *mrb)
   mrb_define_method(mrb, filestat, "file?", mrb_filestat_is_file, MRB_ARGS_NONE());
   mrb_define_method(mrb, filestat, "directory?", mrb_filestat_is_directory, MRB_ARGS_NONE());
   mrb_define_method(mrb, filestat, "mtime", mrb_filestat_mtime, MRB_ARGS_NONE());
+  mrb_define_method(mrb, filestat, "symlink?", mrb_filestat_is_symlink, MRB_ARGS_NONE());
+  mrb_define_method(mrb, filestat, "writable?", mrb_filestat_is_writable, MRB_ARGS_NONE());
   MRB_SET_INSTANCE_TT(filestat, MRB_TT_DATA);
   DONE;
 }
