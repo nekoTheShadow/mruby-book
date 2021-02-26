@@ -3,12 +3,35 @@
 #include "http_config.h"
 #include "http_protocol.h"
 #include "http_log.h"
+#include "apr_thread_mutex.h"
 
 #include <mruby.h>
 #include <mruby/compile.h>
 #include <mruby/string.h>
 
+#include "mod_minimruby.h"
+
+#define MINIM_HANLDER_TERMINATE(r, mrb) \
+  do { \
+    minim_clear_request(); \
+    if (apr_thread_mutex_unlock(minim_mutex) != APR_SUCCESS) { \
+      ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r, "mutex unlock faild"); \
+      return HTTP_INTERNAL_SERVER_ERROR; \
+    } \
+    mrb_close(mrb); \
+  } while(0)
+
 module AP_MODULE_DECLARE_DATA minimruby_module;
+
+apr_thread_mutex_t *minim_mutex;
+
+static void minim_child_init(apr_pool_t *p, server_rec *server) {
+  apr_status_t status = apr_thread_mutex_create(&minim_mutex, APR_THREAD_MUTEX_DEFAULT, p);
+  if (status != APR_SUCCESS) {
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, "Error creating thread mutex");
+    abort();
+  }
+}
 
 typedef struct minim_config {
   unsigned int minim_enabled;
@@ -50,14 +73,20 @@ static const char *set_minim_hanlder_inline(cmd_parms *cmd, void *mconfig, const
 static int minim_hanlder_inline(request_rec *r) {
   minim_dir_config_t *dir_conf = ap_get_module_config(r->per_dir_config, &minimruby_module);
   minim_config_t *conf = ap_get_module_config(r->server->module_config, &minimruby_module);
-  
   if (!conf->minim_enabled) return DECLINED;
   if (!dir_conf->minim_handler_code) return DECLINED;
 
-  ap_set_content_type(r, "text/plain");
+  if (apr_thread_mutex_lock(minim_mutex) != APR_SUCCESS) {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r, "mutex_faild");
+    return HTTP_INTERNAL_SERVER_ERROR;
+  }
 
+  minim_push_request(r);
+
+  ap_set_content_type(r, "text/plain");
   mrb_state *mrb = mrb_open();
   mrb_value v;
+  mrb_minim_request_gem_init(mrb);
 
   v = mrb_load_string(mrb, dir_conf->minim_handler_code);
   if (mrb->exc) {
@@ -65,24 +94,24 @@ static int minim_hanlder_inline(request_rec *r) {
     ap_rprintf(r, "%s", mrb_string_cstr(mrb, mrb_inspect(mrb, mrb_obj_value(mrb->exc))));
     ap_rprintf(r, "\n");
     r->status = HTTP_INTERNAL_SERVER_ERROR;
-    mrb_close(mrb);
+    MINIM_HANLDER_TERMINATE(r, mrb);
     return OK;
   }
 
+  const char* ret;
   if (mrb_string_p(v)) {
-    ap_rprintf(r, "%s", mrb_string_cstr(mrb, v));
+    ret = mrb_string_cstr(mrb, v);
   } else {
-    ap_rprintf(r, "%s", mrb_string_cstr(mrb, mrb_inspect(mrb, v)));
+    ret = mrb_string_cstr(mrb, mrb_inspect(mrb, v));
   }
-  mrb_close(mrb);
-  return OK;
+  ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, r->server, "return value is: %s\n", ret);
 
-  ap_rprintf(r, "My First Apache Module!\n");
-  ap_rprintf(r, "Code: %s\n", dir_conf->minim_handler_code);
+  MINIM_HANLDER_TERMINATE(r, mrb);
   return OK;
 }
 
 static void register_hooks(apr_pool_t *p) {
+  ap_hook_child_init(minim_child_init, NULL, NULL, APR_HOOK_MIDDLE);
   ap_hook_handler(minim_hanlder_inline, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
@@ -101,3 +130,4 @@ module AP_MODULE_DECLARE_DATA minimruby_module = {
   module_cmds,
   register_hooks
 };
+

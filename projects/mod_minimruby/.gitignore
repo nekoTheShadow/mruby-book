@@ -2,3 +2,5 @@ mod_minimruby.la
 mod_minimruby.lo
 mod_minimruby.slo
 .libs
+mrb_request.lo
+mrb_request.slo
