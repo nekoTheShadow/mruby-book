@@ -4,6 +4,10 @@
 #include "http_protocol.h"
 #include "http_log.h"
 
+#include <mruby.h>
+#include <mruby/compile.h>
+#include <mruby/string.h>
+
 module AP_MODULE_DECLARE_DATA minimruby_module;
 
 typedef struct minim_config {
@@ -51,6 +55,28 @@ static int minim_hanlder_inline(request_rec *r) {
   if (!dir_conf->minim_handler_code) return DECLINED;
 
   ap_set_content_type(r, "text/plain");
+
+  mrb_state *mrb = mrb_open();
+  mrb_value v;
+
+  v = mrb_load_string(mrb, dir_conf->minim_handler_code);
+  if (mrb->exc) {
+    ap_rprintf(r, "!!! mruby raised an error:\n");
+    ap_rprintf(r, "%s", mrb_string_cstr(mrb, mrb_inspect(mrb, mrb_obj_value(mrb->exc))));
+    ap_rprintf(r, "\n");
+    r->status = HTTP_INTERNAL_SERVER_ERROR;
+    mrb_close(mrb);
+    return OK;
+  }
+
+  if (mrb_string_p(v)) {
+    ap_rprintf(r, "%s", mrb_string_cstr(mrb, v));
+  } else {
+    ap_rprintf(r, "%s", mrb_string_cstr(mrb, mrb_inspect(mrb, v)));
+  }
+  mrb_close(mrb);
+  return OK;
+
   ap_rprintf(r, "My First Apache Module!\n");
   ap_rprintf(r, "Code: %s\n", dir_conf->minim_handler_code);
   return OK;
