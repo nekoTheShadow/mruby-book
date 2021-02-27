@@ -1,0 +1,7 @@
+name: mruby-unsafe_code
+description: UnsafeCode class
+author: hajime nakamura
+website: https://github.com/nakamura0903/mruby-unsafe_code
+protocol: git
+repository: https://github.com/nakamura0903/mruby-unsafe_code.git
+license: MIT
