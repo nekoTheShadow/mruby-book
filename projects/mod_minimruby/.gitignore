@@ -4,3 +4,4 @@ mod_minimruby.slo
 .libs
 mrb_request.lo
 mrb_request.slo
+mruby
